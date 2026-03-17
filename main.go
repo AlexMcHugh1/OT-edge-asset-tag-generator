@@ -5,39 +5,25 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 )
 
 type PageData struct {
-	UUID      string
-	QRData    string
-	IsChecked bool
+	UUID   string
+	QRData string
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	useSuffix := r.URL.Query().Get("monsters") == "true"
+	// 1. Generate standard dfx- UUID
+	newUUID := "dfx-" + uuid.New().String()
 
-	// Generate Base UUID
-	rawUUID := uuid.New().String()
-	newID := "dfx-" + rawUUID
-
-	// Apply "2319" logic: Replace the last 4 characters if checked
-	if useSuffix {
-		newID = newID[:len(newID)-4] + "2319"
-	}
-
-	// Generate QR Code
-	png, _ := qrcode.Encode(newID, qrcode.Medium, 256)
+	// 2. Generate QR Code
+	png, _ := qrcode.Encode(newUUID, qrcode.Medium, 256)
 	qrBase64 := base64.StdEncoding.EncodeToString(png)
 
-	data := PageData{
-		UUID:      newID,
-		QRData:    qrBase64,
-		IsChecked: useSuffix,
-	}
+	data := PageData{UUID: newUUID, QRData: qrBase64}
 
 	tmpl := `
 	<!DOCTYPE html>
@@ -45,38 +31,61 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>DFX Generator</title>
+		<title>DFX ID Generator</title>
 		<style>
 			body { font-family: -apple-system, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-			.card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 450px; width: 90%; }
-			code { background: #eee; padding: 10px; border-radius: 4px; display: block; margin: 1.5rem 0; word-break: break-all; font-size: 0.95rem; border: 1px solid #ccc; }
-			.options { margin-bottom: 1.5rem; font-size: 0.9rem; color: #555; }
-			button { background: #3498db; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%; }
-			button:hover { background: #2980b9; }
-			input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; vertical-align: middle; }
+			.card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; max-width: 480px; width: 95%; }
+			h1 { color: #2c3e50; font-size: 1.6rem; margin-top: 0; margin-bottom: 2rem; font-weight: 600; }
+			.qr-container { display: flex; justify-content: center; margin-bottom: 2rem; border: 1px solid #ddd; padding: 12px; border-radius: 8px; max-width: 256px; margin-left: auto; margin-right: auto; }
+			.uuid-display { display: flex; align-items: center; justify-content: center; gap: 8px; background: #eee; padding: 12px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 2rem; }
+			code { word-break: break-all; font-size: 0.95rem; color: #333; flex-grow: 1; text-align: left; }
+			.copy-btn { background: #e0e0e0; border: none; padding: 6px; border-radius: 4px; cursor: pointer; transition: background 0.2s; color: #666; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+			.copy-btn:hover { background: #d0d0d0; }
+			.primary-btn { background: #3498db; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 1.05rem; width: 100%; transition: background 0.2s; }
+			.primary-btn:hover { background: #2980b9; }
+			.copy-feedback { display: none; margin-top: -1.5rem; margin-bottom: 1.5rem; color: #27ae60; font-size: 0.85rem; font-weight: 500; }
 		</style>
 	</head>
 	<body>
 		<div class="card">
 			<h1>DFX ID Generator</h1>
-			<img src="data:image/png;base64,{{.QRData}}" alt="QR Code">
-			<code>{{.UUID}}</code>
 			
-			<div class="options">
-				<label>
-					<input type="checkbox" id="suffixCheck" {{if .IsChecked}}checked{{end}} onchange="toggleSuffix()">
-					White Sock Incident (End in 2319)
-				</label>
+			<div class="qr-container">
+				<img src="data:image/png;base64,{{.QRData}}" alt="QR Code" width="256" height="256">
 			</div>
 
-			<button onclick="window.location.reload()">Generate New ID</button>
+			<div class="uuid-display">
+				<code id="uuidValue">{{.UUID}}</code>
+				<button class="copy-btn" onclick="copyToClipboard()" title="Copy ID">📋</button>
+			</div>
+
+			<div class="copy-feedback" id="copyFeedback">✓ Copied to clipboard!</div>
+
+			<button class="primary-btn" onclick="window.location.reload()">Generate New ID</button>
 		</div>
 
 		<script>
-			function toggleSuffix() {
-				const isChecked = document.getElementById('suffixCheck').checked;
-				// Reload the page with the parameter to let the backend handle the ID generation
-				window.location.href = isChecked ? "/?monsters=true" : "/";
+			function copyToClipboard() {
+				const uuidText = document.getElementById('uuidValue').innerText;
+				const feedback = document.getElementById('copyFeedback');
+
+				navigator.clipboard.writeText(uuidText).then(() => {
+					// Show the "Copied" message
+					feedback.style.display = 'block';
+
+					// Hide it after 2 seconds
+					setTimeout(() => {
+						feedback.style.display = 'none';
+					}, 2000);
+				}).catch(err => {
+					console.error('Failed to copy: ', err);
+					feedback.innerText = '❌ Copy failed';
+					feedback.style.display = 'block';
+					setTimeout(() => {
+						feedback.style.display = 'none';
+						feedback.innerText = '✓ Copied to clipboard!'; // Reset text
+					}, 2000);
+				});
 			}
 		</script>
 	</body>
