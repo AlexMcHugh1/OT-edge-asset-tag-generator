@@ -25,8 +25,8 @@ var (
 func handler(w http.ResponseWriter, r *http.Request) {
 	newUUID := "dfx-" + uuid.New().String()
 
-	// Update History (Last 5)
 	mu.Lock()
+	// Insert at the top (index 0)
 	history = append([]string{newUUID}, history...)
 	if len(history) > 5 {
 		history = history[:5]
@@ -49,43 +49,82 @@ func handler(w http.ResponseWriter, r *http.Request) {
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Phoenix | ID Generator</title>
+        <title>Phoenix | DFX Tag Generator</title>
         <style>
-            body { font-family: -apple-system, sans-serif; background-color: #ffffff; color: #333; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-            header { width: 100%; padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 40px; }
-            .logo { color: #e67e22; font-weight: bold; font-size: 24px; text-decoration: none; }
-            .container { text-align: center; max-width: 600px; width: 90%; }
-            h2 { color: #e67e22; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; margin-bottom: 30px; }
-            .main-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 40px; margin-bottom: 30px; transition: box-shadow 0.3s; }
-            .main-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-            .qr-box { border: 1px solid #eee; padding: 15px; border-radius: 8px; display: inline-block; margin-bottom: 20px; }
-            .uuid-text { font-family: monospace; background: #f9f9f9; padding: 10px 20px; border-radius: 5px; border: 1px solid #eee; font-size: 16px; margin-bottom: 20px; display: block; }
-            .btn { background: #e67e22; color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; text-transform: uppercase; }
+            :root { --phoenix-orange: #f26522; --border-color: #e5e7eb; --text-main: #374151; --text-muted: #9ca3af; }
+            body { font-family: "Inter", -apple-system, sans-serif; background-color: #ffffff; color: var(--text-main); margin: 0; padding: 0; }
             
-            .history-section { width: 100%; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
-            .history-title { font-size: 12px; color: #999; text-transform: uppercase; margin-bottom: 15px; }
-            .history-item { font-family: monospace; font-size: 13px; color: #666; padding: 8px 0; border-bottom: 1px dotted #eee; text-align: left; }
+            /* Header */
+            header { width: 100%; height: 64px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border-color); box-sizing: border-box; }
+            .brand { color: var(--phoenix-orange); font-weight: 700; font-size: 20px; letter-spacing: -0.5px; }
+
+            .content { max-width: 800px; margin: 48px auto; padding: 0 24px; text-align: center; }
+            .section-title { color: var(--phoenix-orange); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 32px; }
+
+            /* Generator Card */
+            .gen-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; margin-bottom: 48px; display: flex; flex-direction: column; align-items: center; }
+            .qr-wrapper { border: 1px solid var(--border-color); padding: 16px; border-radius: 4px; margin-bottom: 24px; }
+            .display-box { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 4px; padding: 8px 12px; width: 100%; max-width: 440px; margin-bottom: 24px; }
+            .display-box code { flex-grow: 1; font-family: monospace; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+            
+            /* Buttons */
+            .copy-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 4px; display: flex; align-items: center; transition: color 0.2s; }
+            .copy-btn:hover { color: var(--phoenix-orange); }
+            .btn-primary { background: var(--phoenix-orange); color: white; border: none; padding: 10px 32px; border-radius: 4px; font-weight: 600; font-size: 13px; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; }
+            .btn-primary:hover { opacity: 0.9; }
+
+            /* History Table */
+            .history-table { width: 100%; border-top: 1px solid var(--border-color); margin-top: 48px; }
+            .history-header { font-size: 11px; color: var(--text-muted); text-transform: uppercase; padding: 16px 0; text-align: center; font-weight: 600; }
+            .history-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f3f4f6; transition: background 0.2s; }
+            .history-row:hover { background: #fafafa; }
+            .history-id { font-family: monospace; font-size: 13px; color: #4b5563; }
         </style>
     </head>
     <body>
-        <header><div class="logo">Phoenix</div></header>
-        <div class="container">
-            <h2>ID Generator</h2>
-            <div class="main-card">
-                <div class="qr-box">
-                    <img src="data:image/png;base64,{{.QRData}}" width="200">
+        <header><div class="brand">Phoenix</div></header>
+        
+        <div class="content">
+            <div class="section-title">Phoenix DFX Tag Generator</div>
+            
+            <div class="gen-card">
+                <div class="qr-wrapper">
+                    <img src="data:image/png;base64,{{.QRData}}" width="160" height="160">
                 </div>
-                <span class="uuid-text">{{.UUID}}</span>
-                <button class="btn" onclick="window.location.reload()">Generate</button>
+                
+                <div class="display-box">
+                    <code id="mainId">{{.UUID}}</code>
+                    <button class="copy-btn" onclick="copyId('mainId')" title="Copy">📋</button>
+                </div>
+
+                <form method="GET">
+                    <button type="submit" class="btn-primary">Generate</button>
+                </form>
             </div>
 
-            <div class="history-section">
-                <div class="history-title">Recent Assets</div>
+            <div class="history-table">
+                <div class="history-header">Recent Assets</div>
                 {{range .History}}
-                <div class="history-item">{{.}}</div>
+                <div class="history-row">
+                    <span class="history-id">{{.}}</span>
+                    <button class="copy-btn" onclick="copyText('{{.}}')" title="Copy">📋</button>
+                </div>
                 {{end}}
             </div>
         </div>
+
+        <script>
+            function copyId(elementId) {
+                const text = document.getElementById(elementId).innerText;
+                copyText(text);
+            }
+
+            function copyText(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // Optional: Add Phoenix-style toast here
+                });
+            }
+        </script>
     </body>
     </html>`
 
@@ -95,6 +134,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	fmt.Println("Phoenix ID Gen starting on :9091...")
+	fmt.Println("Phoenix DFX Tag Generator starting on :9091...")
 	http.ListenAndServe(":9091", nil)
 }
