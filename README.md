@@ -1,7 +1,8 @@
 # OT Edge Device Asset Tag Generator
 
 A lightweight, standalone Go tool for generating unique identifiers and QR codes for OT edge device asset management.
-
+![alt text](light-mode-screenshot.png)
+![alt text](dark-mode-screenshot.png)
 ## Key Features
 
 * **Asset Tagging**: Generates custom `dfx-` prefixed UUIDs specifically for tracking OT hardware and edge devices.
