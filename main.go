@@ -104,7 +104,7 @@ const tmpl = `
         .qr-frame img { width: 180px; height: 180px; display: block; }
         .fs-btn { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid var(--p-border); border-radius: 4px; padding: 4px; cursor: pointer; }
         .fs-btn svg { width: 14px; height: 14px; stroke: var(--p-muted); stroke-width: 2.5; fill: none; }
-        .id-display { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--p-border); border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; cursor: pointer; transition: background 0.3s, border-color 0.3s; }
+        .id-display { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--p-border); border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
         .id-display:hover { background: #f1f5f9; }
         .copy-flash { background: var(--p-toast-bg) !important; border-color: #7dd3fc !important; }
         code { flex-grow: 1; font-family: ui-monospace, monospace; font-size: 13px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
@@ -113,7 +113,7 @@ const tmpl = `
         .btn-main:active { transform: scale(0.98); }
         .history { border-top: 1px solid var(--p-border); padding-top: 24px; text-align: left; }
         .history-label { font-size: 10px; font-weight: 700; color: var(--p-muted); text-transform: uppercase; margin-bottom: 12px; display: block; text-align: center; }
-        .history-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; gap: 8px; cursor: pointer; }
+        .history-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; gap: 8px; cursor: pointer; transition: background 0.2s; }
         .history-row:hover { background: #fafafa; }
         .h-info { display: flex; flex-direction: column; pointer-events: none; }
         .h-id { font-family: ui-monospace, monospace; font-size: 12px; color: #4b5563; }
@@ -159,6 +159,7 @@ const tmpl = `
     <script>
         const checkSvg = '<path d="M20 6L9 17L4 12" stroke-linecap="round" stroke-linejoin="round"/>';
         const copySvg = '<path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.242-3.242A2 2 0 0014.758 2H10a2 2 0 00-2 2z"></path><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2"></path>';
+        let copyTimeout;
 
         function saveHistory(data) { localStorage.setItem('dfx_history_v3', JSON.stringify(data)); renderHistory(data); }
         function loadHistory() { 
@@ -190,31 +191,33 @@ const tmpl = `
         function handleCopy(id, el) { handleCopyText(document.getElementById(id).innerText, el); }
         
         function handleCopyText(text, el) {
+            // Kill existing active states
+            clearTimeout(copyTimeout);
+            document.querySelectorAll('.copy-flash').forEach(box => box.classList.remove('copy-flash'));
+            document.querySelectorAll('.icon-btn svg').forEach(svg => svg.innerHTML = copySvg);
+
             const textArea = document.createElement("textarea");
             textArea.value = text;
             textArea.style.position = "fixed";
             textArea.style.left = "-9999px";
-            textArea.style.top = "0";
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
             
             try {
-                const successful = document.execCommand('copy');
-                if (successful) {
+                if (document.execCommand('copy')) {
                     showToast();
                     el.classList.add('copy-flash');
                     const svg = el.querySelector('svg');
-                    const original = svg.innerHTML;
-                    svg.innerHTML = checkSvg;
-                    setTimeout(() => { 
-                        el.classList.remove('copy-flash'); 
-                        svg.innerHTML = original;
-                    }, 1000);
+                    if (svg) {
+                        svg.innerHTML = checkSvg;
+                        copyTimeout = setTimeout(() => { 
+                            el.classList.remove('copy-flash'); 
+                            svg.innerHTML = copySvg;
+                        }, 1000);
+                    }
                 }
-            } catch (err) {
-                console.error('Fallback copy failed', err);
-            }
+            } catch (err) { console.error(err); }
             document.body.removeChild(textArea);
         }
 
