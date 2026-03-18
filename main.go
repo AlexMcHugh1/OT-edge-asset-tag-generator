@@ -358,15 +358,17 @@ const tmpl = `<!DOCTYPE html>
         .history-row:last-child { border-bottom: none; }
         .history-row.copy-flash { background: var(--copy-flash-bg); }
 
-        .h-info { display: flex; flex-direction: column; pointer-events: none; gap: 2px; min-width: 0; flex: 1; }
+        .h-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; cursor: pointer; }
 
         .h-id {
             font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem;
             color: var(--text-sec); overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; transition: color var(--tr) ease;
+            white-space: nowrap; transition: color var(--tr) ease; pointer-events: none;
         }
 
-        .h-ts { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.02em; transition: color var(--tr) ease; }
+        .h-ts { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.02em; transition: color var(--tr) ease; pointer-events: none; }
+
+        .history-actions { display: flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
 
         .icon-btn {
             background: none; border: none; cursor: pointer; padding: 6px;
@@ -753,14 +755,20 @@ const tmpl = `<!DOCTYPE html>
             else renderHistory([]);
         }
 
+        var qrIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="5" y="5" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="17" y="5" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="5" y="17" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="14" y="14" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="18" y="14" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="14" y="18" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/><rect x="18" y="18" width="2" height="2" rx="0.3" fill="currentColor" stroke="none"/></svg>';
+
         function renderHistory(items) {
             var list = document.getElementById('historyList');
             var h = '';
             items.forEach(function(item) {
-                h += '<div class="history-row" onclick="handleCopyText(\'' + item.uuid + '\', this)">' +
-                     '<div class="h-info"><span class="h-ts">' + item.timestamp + '</span>' +
+                h += '<div class="history-row">' +
+                     '<div class="h-info" onclick="handleCopyText(\'' + item.uuid + '\', this.parentElement)"><span class="h-ts">' + item.timestamp + '</span>' +
                      '<span class="h-id">' + item.uuid + '</span></div>' +
-                     '<div class="icon-btn copy-only"><svg viewBox="0 0 24 24">' + copySvg + '</svg></div></div>';
+                     '<div class="history-actions">' +
+                     '<div class="icon-btn" onclick="event.stopPropagation();showHistoryQR(\'' + item.uuid + '\')" title="Show QR">' + qrIconSvg + '</div>' +
+                     '<div class="icon-btn copy-only" onclick="event.stopPropagation();handleCopyText(\'' + item.uuid + '\', this.closest(\'.history-row\'))" title="Copy">' +
+                     '<svg viewBox="0 0 24 24">' + copySvg + '</svg></div>' +
+                     '</div></div>';
             });
             list.innerHTML = h;
         }
@@ -775,7 +783,15 @@ const tmpl = `<!DOCTYPE html>
             var data = await res.json();
             document.getElementById('qrImg').src = 'data:image/png;base64,' + data.qr_data;
             document.getElementById('currentId').innerText = data.uuid;
-            saveHistory(data.history);
+
+            // Merge: prepend the new server tag into the existing local
+            // history (which may contain client-side edits) instead of
+            // overwriting it with the server's history.
+            var saved = localStorage.getItem('dfx_history_v3');
+            var local = saved ? JSON.parse(saved) : [];
+            local.unshift({ uuid: data.uuid, timestamp: data.history[0].timestamp });
+            if (local.length > 5) local = local.slice(0, 5);
+            saveHistory(local);
         }
 
         /* ── Fullscreen QR ── */
@@ -784,7 +800,20 @@ const tmpl = `<!DOCTYPE html>
             document.getElementById('modal').classList.add('show');
         }
 
+        function openFullscreenSrc(src) {
+            document.getElementById('fsImg').src = src;
+            document.getElementById('modal').classList.add('show');
+        }
+
         function closeFullscreen() { document.getElementById('modal').classList.remove('show'); }
+
+        async function showHistoryQR(uuid) {
+            try {
+                var res = await fetch('/api/qr?text=' + encodeURIComponent(uuid));
+                var data = await res.json();
+                openFullscreenSrc('data:image/png;base64,' + data.qr_data);
+            } catch(e) { console.error('QR fetch failed:', e); }
+        }
 
         window.onload = loadHistory;
     </script>
