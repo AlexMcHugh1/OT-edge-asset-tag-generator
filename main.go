@@ -75,8 +75,8 @@ func main() {
 		t.Execute(w, PageData{UUID: current.UUID, QRData: qr, History: h})
 	})
 
-	fmt.Println("Phoenix DFX Tag Generator online at :9091")
-	http.ListenAndServe(":9091", nil)
+	fmt.Println("Phoenix DFX Tag Generator online at :9092")
+	http.ListenAndServe(":9092", nil)
 }
 
 const tmpl = `
@@ -103,54 +103,40 @@ const tmpl = `
         .title { color: var(--p-orange); font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 28px; }
         
         .card { border: 1px solid var(--p-border); border-radius: 8px; padding: 24px; margin-bottom: 32px; position: relative; }
-        
-        /* Fixed Overlap Fix */
-        .qr-frame { border: 1px solid var(--p-border); padding: 20px; border-radius: 4px; display: inline-block; margin-bottom: 20px; background: #fff; position: relative; }
+        .qr-frame { border: 1px solid var(--p-border); padding: 20px; border-radius: 4px; display: inline-block; margin-bottom: 20px; background: #fff; position: relative; cursor: pointer; }
         .qr-frame img { width: 180px; height: 180px; display: block; }
         
-        .fs-btn { 
-            position: absolute; 
-            top: 4px; 
-            right: 4px; 
-            background: rgba(255, 255, 255, 0.7); 
-            backdrop-filter: blur(4px);
-            border: 1px solid var(--p-border); 
-            border-radius: 4px; 
-            padding: 4px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center;
-            transition: background 0.2s;
-        }
-        .fs-btn:hover { background: #fff; }
+        .fs-btn { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid var(--p-border); border-radius: 4px; padding: 4px; cursor: pointer; }
         .fs-btn svg { width: 14px; height: 14px; stroke: var(--p-muted); stroke-width: 2.5; fill: none; }
 
-        .id-display { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--p-border); border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; }
-        code { flex-grow: 1; font-family: ui-monospace, monospace; font-size: 13px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* ID Display & Flash Animation */
+        .id-display { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--p-border); border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; cursor: pointer; transition: background 0.3s, border-color 0.3s; }
+        .id-display:hover { background: #f1f5f9; }
+        .copy-flash { background: var(--p-toast-bg) !important; border-color: #7dd3fc !important; }
+        code { flex-grow: 1; font-family: ui-monospace, monospace; font-size: 13px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+        
         .btn-main { background: var(--p-orange); color: white; border: none; padding: 14px; border-radius: 4px; font-weight: 600; text-transform: uppercase; cursor: pointer; width: 100%; font-size: 13px; transition: background 0.2s, transform 0.1s; }
         .btn-main:hover { background: var(--p-orange-hover); }
         .btn-main:active { transform: scale(0.98); }
         
         .history { border-top: 1px solid var(--p-border); padding-top: 24px; text-align: left; }
         .history-label { font-size: 10px; font-weight: 700; color: var(--p-muted); text-transform: uppercase; margin-bottom: 12px; display: block; text-align: center; }
-        .history-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; gap: 8px; }
-        .h-info { display: flex; flex-direction: column; }
-        .h-id { font-family: ui-monospace, monospace; font-size: 12px; color: #4b5563; word-break: break-all; }
+        .history-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; gap: 8px; cursor: pointer; }
+        .history-row:hover { background: #fafafa; }
+        .h-info { display: flex; flex-direction: column; pointer-events: none; }
+        .h-id { font-family: ui-monospace, monospace; font-size: 12px; color: #4b5563; }
         .h-ts { font-size: 10px; color: var(--p-muted); font-weight: 500; }
-        .icon-btn { background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; border-radius: 4px; color: var(--p-text); }
+        
+        .icon-btn { background: none; border: none; cursor: pointer; padding: 8px; color: var(--p-text); }
         .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
         
         #modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         #modal.show { display: flex; }
-        #modal img { width: 90vw; height: 90vw; max-width: 500px; max-height: 500px; }
-        .close-fs { position: absolute; top: 20px; right: 20px; font-size: 32px; cursor: pointer; color: var(--p-text); padding: 10px; }
+        #modal img { width: 90vw; height: 90vw; max-width: 500px; }
+        .close-fs { position: absolute; top: 20px; right: 20px; font-size: 32px; cursor: pointer; }
+        
         #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--p-toast-bg); color: var(--p-toast-text); padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: transform 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 3000; }
         #toast.show { transform: translateX(-50%) translateY(0); }
-        
-        @media (max-width: 480px) {
-            .card { padding: 16px; }
-            .qr-frame img { width: 140px; height: 140px; }
-        }
     </style>
 </head>
 <body>
@@ -158,39 +144,27 @@ const tmpl = `
     <div class="content">
         <div class="title">DFX Tag Generator</div>
         <div class="card">
-            <div class="qr-frame">
+            <div class="qr-frame" onclick="openFullscreen()">
                 <img id="qrImg" src="data:image/png;base64,{{.QRData}}">
-                <button class="fs-btn" onclick="openFullscreen()">
+                <div class="fs-btn">
                     <svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                </button>
+                </div>
             </div>
-            <div class="id-display">
+            <div class="id-display" id="mainIdBox" onclick="handleCopy('currentId', this)">
                 <code id="currentId">{{.UUID}}</code>
-                <button class="icon-btn" onclick="handleCopy('currentId', this)">
+                <div class="icon-btn">
                     <svg viewBox="0 0 24 24"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.242-3.242A2 2 0 0014.758 2H10a2 2 0 00-2 2z"></path><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2"></path></svg>
-                </button>
+                </div>
             </div>
             <button class="btn-main" onclick="generate()">Generate Tag</button>
         </div>
         <div class="history">
             <span class="history-label">Recent Assets</span>
-            <div id="historyList">
-                {{range .History}}
-                <div class="history-row">
-                    <div class="h-info">
-                        <span class="h-ts">{{.Timestamp}}</span>
-                        <span class="h-id">{{.UUID}}</span>
-                    </div>
-                    <button class="icon-btn" onclick="handleCopyText('{{.UUID}}', this)">
-                        <svg viewBox="0 0 24 24"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.242-3.242A2 2 0 0014.758 2H10a2 2 0 00-2 2z"></path><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2"></path></svg>
-                    </button>
-                </div>
-                {{end}}
-            </div>
+            <div id="historyList"></div>
         </div>
     </div>
-    <div id="modal">
-        <div class="close-fs" onclick="closeFullscreen()">&times;</div>
+    <div id="modal" onclick="closeFullscreen()">
+        <div class="close-fs">&times;</div>
         <img id="fsImg">
     </div>
     <div id="toast">✓ ID copied to clipboard</div>
@@ -198,46 +172,58 @@ const tmpl = `
         const copySvg = '<path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.242-3.242A2 2 0 0014.758 2H10a2 2 0 00-2 2z"></path><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2"></path>';
         const checkSvg = '<path d="M20 6L9 17L4 12" stroke-linecap="round" stroke-linejoin="round"/>';
 
+        function saveHistory(data) { localStorage.setItem('dfx_history', JSON.stringify(data)); renderHistory(data); }
+        function loadHistory() { 
+            const saved = localStorage.getItem('dfx_history');
+            if (saved) renderHistory(JSON.parse(saved));
+            else renderHistory([]);
+        }
+
+        function renderHistory(items) {
+            const list = document.getElementById('historyList');
+            let h = "";
+            items.forEach(item => {
+                h += '<div class="history-row" onclick="handleCopyText(\'' + item.uuid + '\', this)">' +
+                     '<div class="h-info"><span class="h-ts">' + item.timestamp + '</span>' +
+                     '<span class="h-id">' + item.uuid + '</span></div>' +
+                     '<div class="icon-btn"><svg viewBox="0 0 24 24">' + copySvg + '</svg></div></div>';
+            });
+            list.innerHTML = h;
+        }
+
         async function generate() {
             const res = await fetch('/api/generate');
             const data = await res.json();
             document.getElementById('qrImg').src = 'data:image/png;base64,' + data.qr_data;
             document.getElementById('currentId').innerText = data.uuid;
-            const list = document.getElementById('historyList');
-            let h = "";
-            data.history.forEach(item => {
-                h += '<div class="history-row"><div class="h-info">' +
-                     '<span class="h-ts">' + item.timestamp + '</span>' +
-                     '<span class="h-id">' + item.uuid + '</span></div>' +
-                     '<button class="icon-btn" onclick="handleCopyText(\'' + item.uuid + '\', this)">' +
-                     '<svg viewBox="0 0 24 24">' + copySvg + '</svg></button></div>';
-            });
-            list.innerHTML = h;
+            saveHistory(data.history);
+        }
+
+        function handleCopy(id, el) { handleCopyText(document.getElementById(id).innerText, el); }
+        function handleCopyText(text, el) {
+            navigator.clipboard.writeText(text);
+            showToast();
+            el.classList.add('copy-flash');
+            const svg = el.querySelector('svg');
+            const original = svg.innerHTML;
+            svg.innerHTML = checkSvg;
+            setTimeout(() => { 
+                el.classList.remove('copy-flash'); 
+                svg.innerHTML = original;
+            }, 1000);
         }
 
         function openFullscreen() {
             document.getElementById('fsImg').src = document.getElementById('qrImg').src;
             document.getElementById('modal').classList.add('show');
-            document.body.style.overflow = 'hidden';
         }
-        function closeFullscreen() {
-            document.getElementById('modal').classList.remove('show');
-            document.body.style.overflow = 'auto';
-        }
-        function handleCopy(id, btn) { handleCopyText(document.getElementById(id).innerText, btn); }
-        function handleCopyText(text, btn) {
-            navigator.clipboard.writeText(text);
-            showToast();
-            const svg = btn.querySelector('svg');
-            const original = svg.innerHTML;
-            svg.innerHTML = checkSvg;
-            setTimeout(() => svg.innerHTML = original, 2000);
-        }
+        function closeFullscreen() { document.getElementById('modal').classList.remove('show'); }
         function showToast() {
             const t = document.getElementById('toast');
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 3000);
         }
+        window.onload = loadHistory;
     </script>
 </body>
 </html>`
