@@ -23,14 +23,7 @@ Infrastructure: Rocky Linux + systemd.
 
 Access: Cloudflare Tunnel for secure, encrypted traffic to the edge without opening inbound firewall ports.
 
-📂 Structure
-Plaintext
-.
-├── main.go           # Application logic + HTML/CSS template
-├── go.mod            # Dependencies
-└── go.sum            # Checksums
-
-🌐 Networking (Cloudflare)
+ Networking (Cloudflare)
 The app is served via https://getdfx.uk.
 
 Using a Cloudflare Tunnel ensures a "Secure Context," which is required for the browser to allow the Copy to Clipboard feature to work natively
