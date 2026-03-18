@@ -658,7 +658,7 @@ const tmpl = `<!DOCTYPE html>
             input.style.display = 'block';
             box.classList.add('editing');
             input.focus();
-            input.select();
+            input.setSelectionRange(input.value.length, input.value.length);
         }
 
         async function finishEdit() {
