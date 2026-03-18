@@ -104,43 +104,43 @@ const tmpl = `<!DOCTYPE html>
             --accent-hover: #ff7636;
             --accent-light: rgba(232,93,42,0.08);
             --shadow-card: 0 1px 4px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
-            --toast-bg: #1a1a1a;
-            --toast-text: #fff;
+            --toast-bg: #e0f2fe;
+            --toast-text: #0369a1;
             --modal-bg: rgba(255,255,255,0.96);
             --qr-border: #e5e7eb;
             --qr-bg: #ffffff;
             --hist-hover: #f7f7f8;
             --hist-border: #f3f4f6;
-            --copy-flash-bg: #fef3ee;
-            --copy-flash-border: #f5a67b;
+            --copy-flash-bg: #e0f2fe;
+            --copy-flash-border: #7dd3fc;
             --icon-stroke: #444;
             --tr: 0.35s;
             color-scheme: light;
         }
 
         [data-theme="dark"] {
-            --bg: #111113;
-            --bg-card: #1c1c1f;
-            --bg-header: rgba(17,17,19,0.9);
-            --bg-input: #222226;
+            --bg: #1a1a1e;
+            --bg-card: #242428;
+            --bg-header: rgba(26,26,30,0.9);
+            --bg-input: #2a2a2f;
             --text: #e8e8ea;
             --text-sec: #a0a0a5;
             --text-muted: #666669;
-            --border: #2a2a2d;
-            --border-hover: #3a3a3e;
+            --border: #323236;
+            --border-hover: #434348;
             --accent: #f06b35;
             --accent-hover: #ff8a50;
             --accent-light: rgba(240,107,53,0.1);
             --shadow-card: 0 1px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04);
-            --toast-bg: #e8e8ea;
-            --toast-text: #111113;
-            --modal-bg: rgba(17,17,19,0.96);
-            --qr-border: #2a2a2d;
+            --toast-bg: #1e3a5f;
+            --toast-text: #7dd3fc;
+            --modal-bg: rgba(26,26,30,0.96);
+            --qr-border: #323236;
             --qr-bg: #ffffff;
-            --hist-hover: #222226;
-            --hist-border: #2a2a2d;
-            --copy-flash-bg: rgba(240,107,53,0.12);
-            --copy-flash-border: #f06b35;
+            --hist-hover: #2a2a2f;
+            --hist-border: #323236;
+            --copy-flash-bg: rgba(30,58,95,0.4);
+            --copy-flash-border: #2563eb;
             --icon-stroke: #b0b0b4;
             color-scheme: dark;
         }
@@ -188,7 +188,7 @@ const tmpl = `<!DOCTYPE html>
         .app-title {
             font-weight: 700;
             font-size: 0.88rem;
-            color: var(--text);
+            color: var(--accent);
             letter-spacing: -0.01em;
             transition: color var(--tr) ease;
         }
@@ -650,27 +650,35 @@ const tmpl = `<!DOCTYPE html>
         }
 
         /* ─────────────────────────────────────────────
-           Per-element flash: WeakMap keeps independent
-           timers so copying row A then row B doesn't
-           cancel A's checkmark early.
+           Flash: EXCLUSIVE — only one element can be
+           flashed at a time. A new copy cancels the
+           previous flash immediately.
            ───────────────────────────────────────────── */
-        var flashTimers = new WeakMap();
+        var activeFlash = null;   // { el, svg, timer }
+
+        function clearActiveFlash() {
+            if (!activeFlash) return;
+            clearTimeout(activeFlash.timer);
+            activeFlash.el.classList.remove('copy-flash');
+            if (activeFlash.svg) activeFlash.svg.innerHTML = copySvg;
+            activeFlash = null;
+        }
 
         function flashElement(el) {
-            var prev = flashTimers.get(el);
-            if (prev) clearTimeout(prev);
+            // Cancel any existing flash first
+            clearActiveFlash();
 
             el.classList.add('copy-flash');
             var svg = el.querySelector('.icon-btn svg') || el.querySelector('svg');
             if (svg) svg.innerHTML = checkSvg;
 
-            var t = setTimeout(function() {
+            var timer = setTimeout(function() {
                 el.classList.remove('copy-flash');
                 if (svg) svg.innerHTML = copySvg;
-                flashTimers.delete(el);
+                activeFlash = null;
             }, 1200);
 
-            flashTimers.set(el, t);
+            activeFlash = { el: el, svg: svg, timer: timer };
         }
 
         /* ── Copy ── */
