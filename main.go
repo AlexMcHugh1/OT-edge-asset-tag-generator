@@ -97,8 +97,6 @@ const tmpl = `
             --p-toast-text: #0369a1; 
         }
         body { font-family: "Inter", system-ui, sans-serif; background: #fff; color: var(--p-text); margin: 0; -webkit-tap-highlight-color: transparent; }
-        
-        /* Adjusted content margin now that header is gone */
         .content { max-width: 600px; margin: 48px auto; padding: 0 16px; text-align: center; }
         .title { color: var(--p-orange); font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 28px; }
         
@@ -131,7 +129,15 @@ const tmpl = `
         
         #modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         #modal.show { display: flex; }
-        #modal img { width: 90vw; height: 90vw; max-width: 500px; }
+        #modal img { 
+            width: 90vw; 
+            height: auto; 
+            max-width: 500px; 
+            max-height: 500px; 
+            object-fit: contain; 
+            aspect-ratio: 1 / 1;
+            image-rendering: pixelated;
+        }
         .close-fs { position: absolute; top: 20px; right: 20px; font-size: 32px; cursor: pointer; }
         
         #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--p-toast-bg); color: var(--p-toast-text); padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: transform 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 3000; }
