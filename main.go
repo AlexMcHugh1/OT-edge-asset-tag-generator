@@ -71,11 +71,11 @@ func main() {
 		png, _ := qrcode.Encode(current.UUID, qrcode.Medium, 256)
 		qr := base64.StdEncoding.EncodeToString(png)
 
-		t := template.Must(template.New("phoenix").Parse(tmpl))
+		t := template.Must(template.New("dfx").Parse(tmpl))
 		t.Execute(w, PageData{UUID: current.UUID, QRData: qr, History: h})
 	})
 
-	fmt.Println("Phoenix DFX Tag Generator online at :9092")
+	fmt.Println("DFX Tag Generator online at :9092")
 	http.ListenAndServe(":9092", nil)
 }
 
@@ -85,7 +85,7 @@ const tmpl = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phoenix | DFX Tag Generator</title>
+    <title>DFX Tag Generator</title>
     <style>
         :root { 
             --p-orange: #f26522; 
@@ -97,9 +97,9 @@ const tmpl = `
             --p-toast-text: #0369a1; 
         }
         body { font-family: "Inter", system-ui, sans-serif; background: #fff; color: var(--p-text); margin: 0; -webkit-tap-highlight-color: transparent; }
-        header { height: 64px; border-bottom: 1px solid var(--p-border); display: flex; align-items: center; padding: 0 24px; }
-        .brand { color: var(--p-orange); font-weight: 700; font-size: 20px; }
-        .content { max-width: 600px; margin: 24px auto; padding: 0 16px; text-align: center; }
+        
+        /* Adjusted content margin now that header is gone */
+        .content { max-width: 600px; margin: 48px auto; padding: 0 16px; text-align: center; }
         .title { color: var(--p-orange); font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 28px; }
         
         .card { border: 1px solid var(--p-border); border-radius: 8px; padding: 24px; margin-bottom: 32px; position: relative; }
@@ -109,7 +109,6 @@ const tmpl = `
         .fs-btn { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid var(--p-border); border-radius: 4px; padding: 4px; cursor: pointer; }
         .fs-btn svg { width: 14px; height: 14px; stroke: var(--p-muted); stroke-width: 2.5; fill: none; }
 
-        /* ID Display & Flash Animation */
         .id-display { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--p-border); border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; cursor: pointer; transition: background 0.3s, border-color 0.3s; }
         .id-display:hover { background: #f1f5f9; }
         .copy-flash { background: var(--p-toast-bg) !important; border-color: #7dd3fc !important; }
@@ -140,7 +139,6 @@ const tmpl = `
     </style>
 </head>
 <body>
-    <header><div class="brand">Phoenix</div></header>
     <div class="content">
         <div class="title">DFX Tag Generator</div>
         <div class="card">
@@ -159,7 +157,7 @@ const tmpl = `
             <button class="btn-main" onclick="generate()">Generate Tag</button>
         </div>
         <div class="history">
-            <span class="history-label">Recent Assets</span>
+            <span class="history-label">Recent History</span>
             <div id="historyList"></div>
         </div>
     </div>
@@ -172,9 +170,9 @@ const tmpl = `
         const copySvg = '<path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.586-1.414l-3.242-3.242A2 2 0 0014.758 2H10a2 2 0 00-2 2z"></path><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2"></path>';
         const checkSvg = '<path d="M20 6L9 17L4 12" stroke-linecap="round" stroke-linejoin="round"/>';
 
-        function saveHistory(data) { localStorage.setItem('dfx_history', JSON.stringify(data)); renderHistory(data); }
+        function saveHistory(data) { localStorage.setItem('dfx_history_v2', JSON.stringify(data)); renderHistory(data); }
         function loadHistory() { 
-            const saved = localStorage.getItem('dfx_history');
+            const saved = localStorage.getItem('dfx_history_v2');
             if (saved) renderHistory(JSON.parse(saved));
             else renderHistory([]);
         }
