@@ -75,7 +75,6 @@ func main() {
 	if err := initDB(); err != nil {
 		log.Fatalf("database init failed: %v", err)
 	}
-	seedAdminAccount()
 	generateData()
 
 	http.HandleFunc("GET /api/generate", apiHandler)

@@ -30,3 +30,9 @@ __debug_bin*
 
 # Go specific
 go.sum
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+server

@@ -2,45 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-// seedAdminAccount creates admin@deltaflare.com on first startup if it doesn't
-// exist. Set ADMIN_PASSWORD to override the default password.
-func seedAdminAccount() {
-	const email = "admin@deltaflare.com"
-	password := os.Getenv("ADMIN_PASSWORD")
-	usingDefault := password == ""
-	if usingDefault {
-		password = "DFXadmin1!"
-	}
-
-	var count int
-	db.QueryRow("SELECT COUNT(*) FROM users WHERE email = ?", email).Scan(&count)
-	if count > 0 {
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		log.Printf("seed admin: %v", err)
-		return
-	}
-	if _, err = db.Exec("INSERT INTO users (email, password_hash) VALUES (?, ?)", email, string(hash)); err != nil {
-		log.Printf("seed admin: %v", err)
-		return
-	}
-	if usingDefault {
-		log.Printf("Seeded admin account: %s  password: %s  (set ADMIN_PASSWORD env var to override)", email, password)
-	} else {
-		log.Printf("Seeded admin account: %s", email)
-	}
-}
 
 // fakeHash prevents user-enumeration via timing: we run bcrypt even when the
 // email doesn't exist so the response time is indistinguishable from a real

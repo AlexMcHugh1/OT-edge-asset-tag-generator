@@ -2,9 +2,6 @@
 
 A lightweight tool for generating unique asset identifiers and QR codes for OT edge device management. Built in Go, containerised, and deployed on RKE2.
 
-![Light Mode](light-mode-screenshot.png)
-![Dark Mode](dark-mode-screenshot.png)
-
 ## Features
 
 **Tag Generation** — creates `dfx-` prefixed UUIDs for tracking OT hardware and edge devices. Each tag gets a matching QR code rendered server-side as a Base64 PNG with no external API calls.
@@ -23,7 +20,7 @@ A lightweight tool for generating unique asset identifiers and QR codes for OT e
 
 ### My Devices (requires account)
 
-**Accounts** — registration and login restricted to `@deltaflare.com` email addresses. Sessions persist for 30 days via a secure HttpOnly cookie. Passwords are hashed with bcrypt (cost 12).
+**Accounts** — registration and login restricted to company email addresses. Sessions persist for 30 days via a secure HttpOnly cookie. Passwords are hashed with bcrypt (cost 12).
 
 **Save Tags** — any generated or historical tag can be saved to My Devices with the following fields:
 
@@ -31,7 +28,7 @@ A lightweight tool for generating unique asset identifiers and QR codes for OT e
 |---|---|
 | Device Name | Free text |
 | Environment | Dev / Test / Preproduction / Production / Staging / Cadent / SGN / Other |
-| Serial Number | Optional — `E` + 6-digit format (e.g. `E604930`) |
+| Serial Number | Optional |
 | Location | Dev Rack / Preproduction Rack / Production Rack / OT Test Rack / Other |
 | Visibility | Private (owner only) or Shared (visible and editable by all users) |
 
@@ -64,7 +61,7 @@ The app runs as a single-replica Deployment in the `dfx` namespace. The SQLite d
 | `/` | GET | — | Serves the UI |
 | `/api/generate` | GET | — | Generates a new tag — returns UUID, QR base64, and history |
 | `/api/qr?text=` | GET | — | Returns a QR code PNG (base64) for any given text |
-| `/api/auth/register` | POST | — | Create a `@deltaflare.com` account |
+| `/api/auth/register` | POST | — | Create an account |
 | `/api/auth/login` | POST | — | Login — sets a 30-day session cookie |
 | `/api/auth/logout` | POST | — | Clears the session |
 | `/api/auth/me` | GET | — | Returns the current user or null |
@@ -78,4 +75,3 @@ The app runs as a single-replica Deployment in the `dfx` namespace. The SQLite d
 | Environment Variable | Default | Description |
 |---|---|---|
 | `DB_PATH` | `./dfx.db` | Path to the SQLite database file |
-| `ADMIN_PASSWORD` | `DFXadmin1!` | Password for the seeded `admin@deltaflare.com` account |
