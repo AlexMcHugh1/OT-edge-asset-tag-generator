@@ -4,6 +4,7 @@ A lightweight tool for generating unique asset identifiers and QR codes for OT e
 
 ## Features
 
+
 **Tag Generation** — creates `dfx-` prefixed UUIDs for tracking OT hardware and edge devices. Each tag gets a matching QR code rendered server-side as a Base64 PNG with no external API calls.
 
 **Manual Editing** — tap the pencil icon to edit a tag directly. Validates against the `dfx-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` format, regenerates the QR to match, and pushes the edit into history. Invalid input shows an inline error with a one-click regenerate button.
