@@ -13,6 +13,9 @@ FROM alpine:3.20
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/server .
+RUN mkdir -p /data && chown 65534:65534 /data
 EXPOSE 9092
+VOLUME ["/data"]
+ENV DB_PATH=/data/dfx.db
 USER 65534
 CMD ["./server"]
