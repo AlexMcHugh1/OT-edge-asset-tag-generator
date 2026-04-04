@@ -675,11 +675,6 @@ const tmpl = `<!DOCTYPE html>
                            placeholder="PP1">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="dSerial">Device Serial Number</label>
-                    <input class="form-input" type="text" id="dSerial" name="serial_number" maxlength="100"
-                           placeholder="Enter serial number">
-                </div>
-                <div class="form-group">
                     <label class="form-label" for="dEnv">Environment</label>
                     <select class="form-select" id="dEnv" onchange="onEnvChange()" required>
                         <option value="">Select environment</option>
@@ -693,13 +688,27 @@ const tmpl = `<!DOCTYPE html>
                         <option value="other">Other</option>
                     </select>
                     <input class="form-input form-input-mt" type="text" id="dEnvCustom"
-                           maxlength="100" placeholder="Enter environment name"
+                           maxlength="100" placeholder="e.g. Preproduction"
                            style="display:none">
                 </div>
                 <div class="form-group">
+                    <label class="form-label" for="dSerial">Serial Number <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted)">(optional)</span></label>
+                    <input class="form-input" type="text" id="dSerial" maxlength="100"
+                           placeholder="e.g. E604930">
+                </div>
+                <div class="form-group">
                     <label class="form-label" for="dLocation">Location</label>
-                    <input class="form-input" type="text" id="dLocation" maxlength="100" required
-                           placeholder="e.g. Preproduction Rack">
+                    <select class="form-select" id="dLocation" onchange="onLocationChange()" required>
+                        <option value="">Select location</option>
+                        <option value="dev rack">Dev Rack</option>
+                        <option value="preproduction rack">Preproduction Rack</option>
+                        <option value="production rack">Production Rack</option>
+                        <option value="ot test rack">OT Test Rack</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input class="form-input form-input-mt" type="text" id="dLocationCustom"
+                           maxlength="100" placeholder="e.g. Preproduction Rack"
+                           style="display:none">
                 </div>
                 <div class="form-group">
                     <label class="checkbox-row">
@@ -972,6 +981,8 @@ const tmpl = `<!DOCTYPE html>
             document.getElementById('dEnvCustom').style.display = 'none';
             document.getElementById('dEnvCustom').value  = '';
             document.getElementById('dLocation').value   = '';
+            document.getElementById('dLocationCustom').style.display = 'none';
+            document.getElementById('dLocationCustom').value = '';
             document.getElementById('dGlobal').checked   = false;
             document.getElementById('deviceError').classList.remove('show');
             document.getElementById('deviceSubmitBtn').textContent = 'Save';
@@ -1254,8 +1265,19 @@ const tmpl = `<!DOCTYPE html>
 
             document.getElementById('dName').value       = device.device_name;
             document.getElementById('dSerial').value     = device.serial_number || '';
-            document.getElementById('dLocation').value   = device.location;
             document.getElementById('dGlobal').checked   = device.is_global;
+
+            var knownLocs = ['dev rack','preproduction rack','production rack','ot test rack'];
+            var locLower  = device.location.toLowerCase();
+            if (knownLocs.indexOf(locLower) !== -1) {
+                document.getElementById('dLocation').value = locLower;
+                document.getElementById('dLocationCustom').style.display = 'none';
+                document.getElementById('dLocationCustom').value = '';
+            } else {
+                document.getElementById('dLocation').value = 'other';
+                document.getElementById('dLocationCustom').style.display = '';
+                document.getElementById('dLocationCustom').value = device.location;
+            }
 
             var knownEnvs = ['dev','test','preproduction','production','staging','cadent','sgn'];
             var envLower  = device.environment.toLowerCase();
@@ -1290,6 +1312,13 @@ const tmpl = `<!DOCTYPE html>
             if (val !== 'other') custom.value = '';
         }
 
+        function onLocationChange() {
+            var val    = document.getElementById('dLocation').value;
+            var custom = document.getElementById('dLocationCustom');
+            custom.style.display = (val === 'other') ? '' : 'none';
+            if (val !== 'other') custom.value = '';
+        }
+
         async function submitDevice(e) {
             e.preventDefault();
             var name      = document.getElementById('dName').value.trim();
@@ -1297,7 +1326,9 @@ const tmpl = `<!DOCTYPE html>
             var envSel    = document.getElementById('dEnv').value;
             var envCustom = document.getElementById('dEnvCustom').value.trim();
             var env       = (envSel === 'other') ? envCustom : envSel;
-            var location  = document.getElementById('dLocation').value.trim();
+            var locSel    = document.getElementById('dLocation').value;
+            var locCustom = document.getElementById('dLocationCustom').value.trim();
+            var location  = (locSel === 'other') ? locCustom : locSel;
             var isGlobal  = document.getElementById('dGlobal').checked;
             var errEl     = document.getElementById('deviceError');
             var btn       = document.getElementById('deviceSubmitBtn');
