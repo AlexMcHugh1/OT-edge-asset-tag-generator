@@ -14,5 +14,5 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/server .
 EXPOSE 9092
-USER nobody
+USER 65534
 CMD ["./server"]
