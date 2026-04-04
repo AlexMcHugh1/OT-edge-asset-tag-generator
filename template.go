@@ -369,6 +369,7 @@ const tmpl = `<!DOCTYPE html>
         [data-theme="dark"] .env-sgn     { background: rgba(20,184,166,0.15); }
         [data-theme="dark"] .env-custom  { background: rgba(107,114,128,0.15);}
 
+        /* ── Dialog Overlay ── */
         .dialog-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.4); backdrop-filter: blur(6px);
@@ -395,6 +396,7 @@ const tmpl = `<!DOCTYPE html>
             margin-bottom: 1.25rem; padding-right: 2rem;
         }
 
+        /* ── Auth Tabs ── */
         .auth-tabs {
             display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem;
             transition: border-color var(--tr) ease;
@@ -408,6 +410,7 @@ const tmpl = `<!DOCTYPE html>
         }
         .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+        /* ── Form Elements ── */
         .form-group { margin-bottom: 0.9rem; }
         .form-label {
             display: block; font-size: 0.68rem; font-weight: 700;
@@ -465,6 +468,7 @@ const tmpl = `<!DOCTYPE html>
             transition: background var(--tr) ease, border-color var(--tr) ease;
         }
 
+        /* ── QR Fullscreen Modal ── */
         #modal {
             display: none; position: fixed; inset: 0; background: var(--modal-bg);
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -485,6 +489,7 @@ const tmpl = `<!DOCTYPE html>
         }
         .close-fs:hover { color: var(--text); border-color: var(--border-hover); }
 
+        /* ── Toast ── */
         #toast {
             position: fixed; bottom: 1.5rem; left: 50%;
             transform: translateX(-50%) translateY(80px);
@@ -498,6 +503,7 @@ const tmpl = `<!DOCTYPE html>
         }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+        /* ── Animations ── */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(14px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -670,7 +676,7 @@ const tmpl = `<!DOCTYPE html>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="dSerial">Device Serial Number</label>
-                    <input class="form-input" type="text" id="dSerial" maxlength="100"
+                    <input class="form-input" type="text" id="dSerial" name="serial_number" maxlength="100"
                            placeholder="Enter serial number">
                 </div>
                 <div class="form-group">

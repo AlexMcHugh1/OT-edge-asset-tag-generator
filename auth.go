@@ -64,7 +64,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	email := strings.TrimSpace(strings.ToLower(req.Email))
 	if !strings.HasSuffix(email, "@deltaflare.com") {
-		jsonError(w, "Only @deltaflare.com email addresses are allowed", 403)
+		jsonError(w, "Registration is closed", 403)
 		return
 	}
 	if len(req.Password) < 8 {
