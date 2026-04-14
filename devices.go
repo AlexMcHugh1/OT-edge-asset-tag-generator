@@ -11,7 +11,7 @@ import (
 type Device struct {
 	ID           int64  `json:"id"`
 	UserID       int64  `json:"user_id"`
-	UserEmail    string `json:"user_email"`
+	Username     string `json:"username"`
 	Tag          string `json:"tag"`
 	DeviceName   string `json:"device_name"`
 	SerialNumber string `json:"serial_number"`
@@ -29,7 +29,7 @@ func listDevicesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rows, err := db.Query(`
-		SELECT d.id, d.user_id, u.email, d.tag, d.device_name, d.serial_number,
+		SELECT d.id, d.user_id, u.username, d.tag, d.device_name, d.serial_number,
 		       d.environment, d.location, d.is_global, d.created_at
 		FROM devices d
 		JOIN users u ON u.id = d.user_id
@@ -45,7 +45,7 @@ func listDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var d Device
 		var isGlobal int
-		if err := rows.Scan(&d.ID, &d.UserID, &d.UserEmail, &d.Tag,
+		if err := rows.Scan(&d.ID, &d.UserID, &d.Username, &d.Tag,
 			&d.DeviceName, &d.SerialNumber, &d.Environment, &d.Location, &isGlobal, &d.CreatedAt); err != nil {
 			continue
 		}

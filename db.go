@@ -26,18 +26,32 @@ func initDB() error {
 	db.Exec("PRAGMA foreign_keys=ON")
 
 	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
-		id            INTEGER PRIMARY KEY AUTOINCREMENT,
-		email         TEXT    NOT NULL UNIQUE,
-		password_hash TEXT    NOT NULL,
-		created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+		id             INTEGER PRIMARY KEY AUTOINCREMENT,
+		username       TEXT    NOT NULL UNIQUE,
+		password_hash  TEXT    NOT NULL,
+		created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+		last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`); err != nil {
 		return err
 	}
+	// Idempotent migrations for existing deployments.
+	db.Exec(`ALTER TABLE users RENAME COLUMN email TO username`)
+	db.Exec(`ALTER TABLE users ADD COLUMN last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP`)
+	// Strip @domain suffix from any usernames that are still stored as emails.
+	db.Exec(`UPDATE users SET username = substr(username, 1, instr(username, '@') - 1) WHERE username LIKE '%@%'`)
 	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS sessions (
 		token      TEXT     PRIMARY KEY,
 		user_id    INTEGER  NOT NULL,
 		expires_at DATETIME NOT NULL,
 		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+	)`); err != nil {
+		return err
+	}
+	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS erasure_requests (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		username   TEXT    NOT NULL,
+		reason     TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`); err != nil {
 		return err
 	}
@@ -82,11 +96,11 @@ func createSession(userID int64) (string, error) {
 func getUserFromSession(token string) (*User, error) {
 	var u User
 	err := db.QueryRow(`
-		SELECT u.id, u.email
+		SELECT u.id, u.username
 		FROM users u
 		JOIN sessions s ON s.user_id = u.id
 		WHERE s.token = ? AND s.expires_at > datetime('now')
-	`, token).Scan(&u.ID, &u.Email)
+	`, token).Scan(&u.ID, &u.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -95,4 +109,17 @@ func getUserFromSession(token string) (*User, error) {
 
 func deleteSession(token string) {
 	db.Exec("DELETE FROM sessions WHERE token = ?", token)
+}
+
+// updateLastActive records the current time as the user's last activity.
+// Called on login and registration so the 12-month retention clock resets.
+func updateLastActive(userID int64) {
+	db.Exec("UPDATE users SET last_active_at = datetime('now') WHERE id = ?", userID)
+}
+
+// deleteInactiveUsers permanently removes accounts that have had no activity
+// for more than 12 months, fulfilling the UK GDPR retention policy.
+func deleteInactiveUsers() {
+	db.Exec(`DELETE FROM users
+		WHERE COALESCE(last_active_at, created_at) < datetime('now', '-12 months')`)
 }

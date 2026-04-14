@@ -76,6 +76,7 @@ func main() {
 		log.Fatalf("database init failed: %v", err)
 	}
 	generateData()
+	startInactiveAccountCleanup()
 
 	http.HandleFunc("GET /api/generate", apiHandler)
 	http.HandleFunc("GET /api/qr", qrHandler)
@@ -83,10 +84,13 @@ func main() {
 	http.HandleFunc("POST /api/auth/register", registerHandler)
 	http.HandleFunc("POST /api/auth/login", loginHandler)
 	http.HandleFunc("POST /api/auth/logout", logoutHandler)
+	http.HandleFunc("DELETE /api/auth/account", deleteAccountHandler)
 	http.HandleFunc("GET /api/devices", listDevicesHandler)
 	http.HandleFunc("POST /api/devices", createDeviceHandler)
 	http.HandleFunc("PUT /api/devices/{id}", updateDeviceHandler)
 	http.HandleFunc("DELETE /api/devices/{id}", deleteDeviceHandler)
+	http.HandleFunc("POST /api/privacy/erasure-request", erasureRequestHandler)
+	http.HandleFunc("GET /privacy", privacyHandler)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()

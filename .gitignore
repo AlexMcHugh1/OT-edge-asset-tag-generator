@@ -26,7 +26,11 @@ Thumbs.db
 
 # Binaries
 dfx-gen
+dfx-tag-uuid-generator
 __debug_bin*
+
+# Secrets
+*.key
 
 # Go specific
 go.sum

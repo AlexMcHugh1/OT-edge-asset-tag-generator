@@ -133,6 +133,23 @@ const tmpl = `<!DOCTYPE html>
         .signout-btn:hover { background: rgba(0,0,0,0.06); }
         .signout-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; display: block; }
 
+        /* ── Footer ── */
+        .site-footer {
+            text-align: center; padding: 1.5rem 1rem;
+            font-size: 0.75rem; color: var(--text-muted);
+        }
+        .site-footer a { color: var(--text-muted); text-decoration: underline; }
+        .site-footer a:hover { color: var(--accent); }
+
+        /* ── Danger button (account deletion) ── */
+        .btn-danger {
+            flex: 1; padding: 0.65rem 1rem; background: #dc2626; color: #fff;
+            border: none; border-radius: 8px; font-family: inherit; font-size: 0.88rem;
+            font-weight: 700; cursor: pointer; transition: opacity 0.2s ease;
+        }
+        .btn-danger:hover { opacity: 0.88; }
+        .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
         /* ── Theme Toggle ── */
         .theme-btn {
             width: 36px; height: 36px; border: none; background: transparent;
@@ -639,6 +656,10 @@ const tmpl = `<!DOCTYPE html>
         </div>
     </div>
 
+    <footer class="site-footer">
+        <a href="/privacy">Privacy Notice</a> &middot; DFX Tag Generator
+    </footer>
+
     <div class="dialog-overlay" id="authOverlay">
         <div class="dialog" id="authDialog">
             <button class="dialog-close" onclick="closeAuthModal()" aria-label="Close">&times;</button>
@@ -648,14 +669,19 @@ const tmpl = `<!DOCTYPE html>
             </div>
             <form id="authForm" onsubmit="submitAuth(event)">
                 <div class="form-group">
-                    <label class="form-label" for="authEmail">Email</label>
-                    <input class="form-input" type="email" id="authEmail" name="email"
-                           placeholder="you@deltaflare.com" required autocomplete="email">
+                    <label class="form-label" for="authEmail">Username</label>
+                    <input class="form-input" type="text" id="authEmail" name="username"
+                           placeholder="your username" required autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="authPassword">Password</label>
                     <input class="form-input" type="password" id="authPassword" name="password"
                            placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div class="form-group" id="inviteCodeGroup" style="display:none">
+                    <label class="form-label" for="authInviteCode">Invite code</label>
+                    <input class="form-input" type="password" id="authInviteCode" name="invite_code"
+                           placeholder="••••••••" autocomplete="off">
                 </div>
                 <div class="form-error" id="authError"></div>
                 <button type="submit" class="btn-main" id="authSubmitBtn" style="margin-top:0.4rem">Sign In</button>
@@ -728,6 +754,25 @@ const tmpl = `<!DOCTYPE html>
     <div id="modal" onclick="closeFullscreen()">
         <div class="close-fs">&times;</div>
         <img id="fsImg" alt="QR Code Fullscreen">
+    </div>
+
+    <div class="dialog-overlay" id="deleteAccountOverlay">
+        <div class="dialog" id="deleteAccountDialog">
+            <button class="dialog-close" onclick="closeDeleteAccountModal()" aria-label="Close">&times;</button>
+            <div class="dialog-title">Delete Account</div>
+            <p style="font-size:0.88rem;color:var(--text-sec);margin-bottom:1rem">This will permanently delete your account and all saved device records. This action cannot be undone.</p>
+            <form id="deleteAccountForm" onsubmit="submitDeleteAccount(event)">
+                <div class="form-group">
+                    <label class="form-label" for="deleteAccountPassword">Confirm your password</label>
+                    <input class="form-input" type="password" id="deleteAccountPassword" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div class="form-error" id="deleteAccountError"></div>
+                <div class="dialog-actions">
+                    <button type="button" class="btn-cancel" onclick="closeDeleteAccountModal()">Cancel</button>
+                    <button type="submit" class="btn-danger" id="deleteAccountBtn">Delete Account</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div id="toast">Copied to clipboard</div>
@@ -1049,10 +1094,16 @@ const tmpl = `<!DOCTYPE html>
             if (!currentUser) {
                 area.innerHTML = '<button class="auth-btn" onclick="openAuthModal(\'login\')">Sign In</button>';
             } else {
-                var displayName = currentUser.email.replace('@deltaflare.com', '');
                 area.innerHTML =
                     '<div class="user-pill">' +
-                    '<span class="user-email">' + escHtml(displayName) + '</span>' +
+                    '<span class="user-email">' + escHtml(currentUser.username) + '</span>' +
+                    '<button class="signout-btn" onclick="openDeleteAccountModal()" title="Delete Account">' +
+                    '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<polyline points="3 6 5 6 21 6"/>' +
+                    '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
+                    '<path d="M10 11v6"/><path d="M14 11v6"/>' +
+                    '<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>' +
+                    '</svg></button>' +
                     '<button class="signout-btn" onclick="doLogout()" title="Sign Out">' +
                     '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">' +
                     '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>' +
@@ -1064,8 +1115,9 @@ const tmpl = `<!DOCTYPE html>
         function openAuthModal(mode) {
             authMode = mode || 'login';
             switchAuthTab(authMode);
-            document.getElementById('authEmail').value    = '';
+            document.getElementById('authEmail').value = '';
             document.getElementById('authPassword').value = '';
+            document.getElementById('authInviteCode').value = '';
             document.getElementById('authError').classList.remove('show');
             document.getElementById('authOverlay').classList.add('show');
             setTimeout(function() { document.getElementById('authEmail').focus(); }, 60);
@@ -1087,13 +1139,15 @@ const tmpl = `<!DOCTYPE html>
                 mode === 'login' ? 'Sign In' : 'Create Account';
             document.getElementById('authPassword').autocomplete =
                 mode === 'login' ? 'current-password' : 'new-password';
+            document.getElementById('inviteCodeGroup').style.display =
+                mode === 'register' ? '' : 'none';
             document.getElementById('authError').classList.remove('show');
         }
 
         async function submitAuth(e) {
             e.preventDefault();
-            var email    = document.getElementById('authEmail').value.trim();
-            var password = document.getElementById('authPassword').value;
+            var username  = document.getElementById('authEmail').value.trim();
+            var password  = document.getElementById('authPassword').value;
             var errEl    = document.getElementById('authError');
             var btn      = document.getElementById('authSubmitBtn');
             var label    = authMode === 'login' ? 'Sign In' : 'Create Account';
@@ -1107,7 +1161,9 @@ const tmpl = `<!DOCTYPE html>
                 var res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
+                    body: JSON.stringify(authMode === 'register'
+                        ? { username: username, password: password, invite_code: document.getElementById('authInviteCode').value }
+                        : { username: username, password: password })
                 });
                 var data = await res.json();
                 if (!res.ok) {
@@ -1216,10 +1272,10 @@ const tmpl = `<!DOCTYPE html>
             }
             var h = '';
             devices.forEach(function(d) {
-                var isMine      = currentUser && d.user_email === currentUser.email;
+                var isMine      = currentUser && d.username === currentUser.username;
                 var sharedBadge = d.is_global ? '<span class="env-badge env-shared">Shared</span>' : '';
                 var byLine      = (!isMine && d.is_global)
-                    ? '<span class="device-by">by ' + escHtml(d.user_email.split('@')[0]) + '</span>'
+                    ? '<span class="device-by">by ' + escHtml(d.username) + '</span>'
                     : '';
                 h += '<div class="device-row" data-id="' + d.id + '" data-tag="' + escHtml(d.tag) + '">' +
                     '<div class="device-info" onclick="handleCopyText(\'' + escHtml(d.tag) + '\', this.parentElement)">' +
@@ -1392,6 +1448,61 @@ const tmpl = `<!DOCTYPE html>
                     showToast('Device deleted');
                 }
             } catch(e) { console.error(e); }
+        }
+
+        /* ── Delete Account ── */
+        function openDeleteAccountModal() {
+            document.getElementById('deleteAccountPassword').value = '';
+            document.getElementById('deleteAccountError').classList.remove('show');
+            document.getElementById('deleteAccountOverlay').classList.add('show');
+            setTimeout(function() { document.getElementById('deleteAccountPassword').focus(); }, 60);
+        }
+
+        function closeDeleteAccountModal() {
+            document.getElementById('deleteAccountOverlay').classList.remove('show');
+        }
+
+        document.getElementById('deleteAccountOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteAccountModal();
+        });
+
+        async function submitDeleteAccount(e) {
+            e.preventDefault();
+            var password = document.getElementById('deleteAccountPassword').value;
+            var errEl    = document.getElementById('deleteAccountError');
+            var btn      = document.getElementById('deleteAccountBtn');
+            btn.disabled    = true;
+            btn.textContent = '...';
+            errEl.classList.remove('show');
+            try {
+                var res  = await fetch('/api/auth/account', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+                var data = await res.json();
+                if (!res.ok) {
+                    errEl.textContent = data.error || 'Something went wrong';
+                    errEl.classList.add('show');
+                    btn.disabled = false;
+                    btn.textContent = 'Delete Account';
+                    return;
+                }
+                currentUser = null;
+                closeDeleteAccountModal();
+                renderAuthArea();
+                allDevices = [];
+                if (document.getElementById('devicesSection').style.display !== 'none') {
+                    renderDevicesArea();
+                    renderDevices([]);
+                }
+                showToast('Account deleted');
+            } catch(err) {
+                errEl.textContent = 'Connection error. Please try again.';
+                errEl.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Delete Account';
+            }
         }
 
         /* ── Init ── */
