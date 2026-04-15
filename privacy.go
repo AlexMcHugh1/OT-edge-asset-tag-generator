@@ -105,10 +105,10 @@ func deleteAccountHandler(w http.ResponseWriter, r *http.Request) {
 func startInactiveAccountCleanup() {
 	go func() {
 		for {
-			deleteInactiveUsers()
 			now := time.Now()
 			next := time.Date(now.Year(), now.Month(), now.Day()+1, 3, 0, 0, 0, now.Location())
 			time.Sleep(time.Until(next))
+			deleteInactiveUsers()
 		}
 	}()
 }
