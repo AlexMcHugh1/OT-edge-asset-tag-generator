@@ -1,10 +1,13 @@
 package main
 
 import (
+	"compress/gzip"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -129,9 +132,10 @@ func deleteInactiveUsers() {
 		WHERE COALESCE(last_active_at, created_at) < datetime('now', '-12 months')`)
 }
 
-// backupDB creates a clean copy of the database using VACUUM INTO, which is
-// safe to run against a live database. Backups are stored in a /backups/
-// subdirectory next to the main database file. Only the 7 most recent are kept.
+// backupDB creates a clean snapshot via VACUUM INTO, compresses it with gzip,
+// and skips saving if the database content hasn't changed since the last
+// backup. Backups are stored in /backups/ next to the main database file.
+// Only the 7 most recent are kept.
 func backupDB() {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
@@ -142,13 +146,97 @@ func backupDB() {
 		log.Printf("backup: could not create backup directory: %v", err)
 		return
 	}
-	dest := filepath.Join(backupDir, fmt.Sprintf("dfx-%s.db", time.Now().Format("2006-01-02")))
-	if _, err := db.Exec("VACUUM INTO ?", dest); err != nil {
+
+	// VACUUM INTO a temp file so we get a consistent snapshot.
+	tmp := filepath.Join(backupDir, ".tmp.db")
+	os.Remove(tmp)
+	if _, err := db.Exec("VACUUM INTO ?", tmp); err != nil {
 		log.Printf("backup: VACUUM INTO failed: %v", err)
+		return
+	}
+	defer os.Remove(tmp)
+
+	// Hash the snapshot and compare to the most recent backup.
+	newHash, err := sha256File(tmp)
+	if err != nil {
+		log.Printf("backup: hash failed: %v", err)
+		return
+	}
+	if newHash == latestBackupHash(backupDir) {
+		log.Printf("backup: no changes, skipping")
+		return
+	}
+
+	// Compress and write the new backup.
+	dest := filepath.Join(backupDir, fmt.Sprintf("dfx-%s.db.gz", time.Now().Format("2006-01-02T15-04-05")))
+	if err := gzipFile(tmp, dest); err != nil {
+		log.Printf("backup: compress failed: %v", err)
 		return
 	}
 	log.Printf("backup: wrote %s", dest)
 	pruneBackups(backupDir, 7)
+}
+
+func sha256File(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// latestBackupHash returns the SHA256 of the most recent backup by
+// decompressing it, so we can compare it to the current snapshot.
+func latestBackupHash(dir string) string {
+	entries, _ := os.ReadDir(dir)
+	var files []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".db.gz") {
+			files = append(files, filepath.Join(dir, e.Name()))
+		}
+	}
+	if len(files) == 0 {
+		return ""
+	}
+	sort.Strings(files)
+	latest := files[len(files)-1]
+
+	f, err := os.Open(latest)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return ""
+	}
+	defer gr.Close()
+	h := sha256.New()
+	io.Copy(h, gr) //nolint
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func gzipFile(src, dest string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	gz := gzip.NewWriter(out)
+	if _, err := io.Copy(gz, in); err != nil {
+		return err
+	}
+	return gz.Close()
 }
 
 // pruneBackups removes old backups keeping only the most recent n files.
@@ -159,11 +247,11 @@ func pruneBackups(dir string, keep int) {
 	}
 	var files []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".db") {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".db.gz") {
 			files = append(files, filepath.Join(dir, e.Name()))
 		}
 	}
-	sort.Strings(files) // lexicographic = chronological for YYYY-MM-DD names
+	sort.Strings(files)
 	for len(files) > keep {
 		os.Remove(files[0])
 		files = files[1:]
