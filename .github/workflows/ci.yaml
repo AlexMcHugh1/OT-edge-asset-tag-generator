@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/alexmchugh1/ot-edge-asset-tag-generator
+  IMAGE_NAME: ghcr.io/alexmchughdev/ot-edge-asset-tag-generator
 
 jobs:
   test:
@@ -77,7 +77,7 @@ jobs:
           cd k8s-manifests
           IMAGE_TAG="sha-$(echo ${{ github.sha }} | cut -c1-7)"
           cd apps/dfx-tag-generator/overlays/production
-          kustomize edit set image ghcr.io/alexmchugh1/ot-edge-asset-tag-generator=ghcr.io/alexmchugh1/ot-edge-asset-tag-generator:${IMAGE_TAG}
+          kustomize edit set image ghcr.io/alexmchughdev/ot-edge-asset-tag-generator=ghcr.io/alexmchughdev/ot-edge-asset-tag-generator:${IMAGE_TAG}
 
       - name: Commit and push
         run: |
