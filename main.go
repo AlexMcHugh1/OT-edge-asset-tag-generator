@@ -95,14 +95,12 @@ func main() {
 	http.HandleFunc("GET /privacy", privacyHandler)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		id, qr := generateData()
 		mu.Lock()
 		h := history
 		mu.Unlock()
-		current := h[0]
-		png, _ := qrcode.Encode(current.UUID, qrcode.Medium, 256)
-		qr := base64.StdEncoding.EncodeToString(png)
 		t := template.Must(template.New("dfx").Parse(tmpl))
-		t.Execute(w, PageData{UUID: current.UUID, QRData: qr, History: h})
+		t.Execute(w, PageData{UUID: id, QRData: qr, History: h})
 	})
 
 	fmt.Println("DFX Tag Generator online at :9092")
