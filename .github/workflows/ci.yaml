@@ -67,23 +67,34 @@ jobs:
 
       - name: Clone manifest repo
         run: |
-          git clone git@github.com:AlexMcHugh1/k8s-manifests.git
-          cd k8s-manifests
+          git clone git@github.com:alexmchughdev/platform-engineering.git
+          cd platform-engineering
           git config user.email "ci@github-actions"
           git config user.name "GitHub Actions"
 
-      - name: Update image tag
+      - name: Install kustomize
+        env:
+          KUSTOMIZE_VERSION: v5.4.3
         run: |
-          cd k8s-manifests
+          curl -fsSL \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            -o kustomize.tar.gz
+          tar -xzf kustomize.tar.gz
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+
+      - name: Bump image tag in overlay
+        run: |
+          cd platform-engineering/apps/ot-edge-asset-tag-generator/overlays/production
           IMAGE_TAG="sha-$(echo ${{ github.sha }} | cut -c1-7)"
-          cd apps/dfx-tag-generator/overlays/production
-          kustomize edit set image ghcr.io/alexmchughdev/ot-edge-asset-tag-generator=ghcr.io/alexmchughdev/ot-edge-asset-tag-generator:${IMAGE_TAG}
+          kustomize edit set image \
+            ghcr.io/alexmchughdev/ot-edge-asset-tag-generator=ghcr.io/alexmchughdev/ot-edge-asset-tag-generator:${IMAGE_TAG}
 
       - name: Commit and push
         run: |
-          cd k8s-manifests
-          git add .
-          git diff --staged --quiet || git commit -m "ci: update dfx-tag-generator to sha-$(echo ${{ github.sha }} | cut -c1-7)
+          cd platform-engineering
+          git add apps/ot-edge-asset-tag-generator/
+          git diff --staged --quiet || git commit -m "ci: bump ot-edge-asset-tag-generator to sha-$(echo ${{ github.sha }} | cut -c1-7)
 
           Source: ${{ github.repository }}@${{ github.sha }}"
           git push
